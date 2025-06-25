@@ -1,0 +1,28 @@
+name: json-processor
+version: "1.0.0"
+dependencies:
+- base >= 4.7 && < 5
+- aeson
+- bytestring
+- text
+- optparse-applicative
+- unordered-containers
+- vector
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Types
+    - CLI
+    - Filter
+    - Validation
+  ghc-options:
+    - -i=src
+
+executables:
+  json-processor:
+    main: Main.hs
+    source-dirs: app
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N
+    dependencies:
+      - json-processor
