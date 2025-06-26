@@ -1,4 +1,4 @@
-module CLI where
+module CLI (parseCommand, Command(..)) where
 
 import Options.Applicative
 
