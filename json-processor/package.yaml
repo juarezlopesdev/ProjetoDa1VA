@@ -10,7 +10,7 @@ dependencies:
 - vector
 - time
 - split
-- directory  # Adicionado para System.Directory
+- directory
 
 library:
   source-dirs: src
