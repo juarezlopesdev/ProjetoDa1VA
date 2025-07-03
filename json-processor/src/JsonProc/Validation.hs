@@ -43,7 +43,7 @@ runValidation opts = do
             else do
               putStrLn "Erros de validação encontrados:"
               mapM_ (putStrLn . ("- " ++)) errors
-        -- Este caso agora captura outros tipos de JSON válidos (Array, String, etc.) e dá uma mensagem clara
+        -- Captura outros tipos de JSON válidos (Array, String, etc.) e dá uma mensagem clara
         Just other -> do
             putStrLn $ "Erro: O arquivo de dados para validação deve ser um objeto JSON, mas foi encontrado um " ++ getJsonType other ++ "."
             putStrLn "Exemplo de formato esperado: {\"chave\": \"valor\", ...}"

@@ -13,7 +13,7 @@ import qualified Data.ByteString.Lazy as B
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import Data.Maybe (mapMaybe)
-import Control.Monad (foldM) -- <-- 1. IMPORTAÇÃO ADICIONADA
+import Control.Monad (foldM)
 
 -- Opções para o comando de filtro
 data FilterOptions = FilterOptions
@@ -56,7 +56,6 @@ navigateAndCheck obj path targetValue =
     Just (A.String s) -> s == targetValue
     _                 -> False
 
--- *** 2. LÓGICA DE NAVEGAÇÃO CORRIGIDA ***
 -- Função auxiliar para ser usada com foldM
 step :: A.Value -> T.Text -> Maybe A.Value
 step (A.Object o) key = KM.lookup (K.fromText key) o
