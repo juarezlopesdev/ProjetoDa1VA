@@ -1,73 +1,119 @@
-# Ferramenta de Processamento JSON
+# json-processor: Ferramenta de Processamento JSON em Haskell
+
+`json-processor` é uma ferramenta de linha de comando desenvolvida em Haskell, focada na manipulação e validação de arquivos JSON. Ela permite que usuários processem dados JSON de forma eficiente, realizando operações de filtragem e validação de esquema diretamente do terminal.
+
+## Tecnologias Utilizadas
+
+* **Linguagem:** Haskell
+* **Build Tool:** Stack
+* **Bibliotecas Principais:**
+    * `Aeson`: Para parsing e manipulação de dados JSON.
+    * `optparse-applicative`: Para a criação de uma interface de linha de comando (CLI) robusta e auto-documentada.
+    * `bytestring` e `vector`: Para manipulação eficiente de dados.
+
+---
 
 ## Funcionalidades e Regras de Negócio
 
-### 1. Modo de Filtragem
-- **Regras:**
-  - **RN01:** O arquivo de entrada deve existir e ser um JSON válido.
-  - **RN02:** A expressão de filtro deve seguir o formato `campo[.subcampo]*=valor`.
-  - **RN03:** Campos aninhados inexistentes resultam em erro.
-  - **RN04:** O sistema recupera o último estado do arquivo `last_state.json` ao iniciar.
-  - **RN05:** Toda filtragem bem-sucedida atualiza `last_state.json`.
+### 1. Modo de Filtragem de Dados (`filtrar`)
 
-- **Fluxo:**
-  ```mermaid
-  graph TD
-    A[Início] --> B[Carregar last_state.json]
-    B --> C{Arquivo existe?}
-    C -->|Sim| D[Processar filtro]
-    C -->|Não| E[Criar estado inicial]
-    D --> F[Atualizar last_state.json]
-### 2. Modo de Validação
-- **Regras**:
+Esta funcionalidade permite que o usuário filtre um arquivo JSON (que contém um array de objetos) com base em um critério de igualdade para um campo específico.
 
-    - **RN06**: O esquema e o JSON de entrada devem ser válidos.
+> **Regras de Negócio:**
+>
+> * Para a filtragem ocorrer, o arquivo de entrada **deve existir** e ser um **JSON válido**.
+> * O conteúdo do arquivo de entrada **deve ser um array JSON** `[{...}, {...}]` no nível raiz. A filtragem não funcionará em um único objeto ou outros tipos de dados.
+> * O critério de filtro **deve ser fornecido** no formato `caminho.chave=valor`. Por exemplo: `status=ativo` ou `dados.cidade=Recife`.
+> * A filtragem busca por **igualdade exata** e diferencia maiúsculas de minúsculas. Atualmente, a comparação é feita apenas com valores do tipo `String`.
+> * A operação de filtragem **nunca modifica o arquivo original**. O resultado é exibido no console ou, se um arquivo de saída for especificado, um novo arquivo é criado ou sobrescrito com os dados filtrados.
 
-    - **RN07**: Campos marcados como required no esquema devem existir.
+### 2. Modo de Validação de Esquema (`validar`)
 
-    - **RN08**: Tipos de campos devem coincidir com o esquema.
+Esta funcionalidade permite que o usuário valide se um arquivo JSON está em conformidade com um esquema pré-definido em outro arquivo JSON.
 
-    - **RN09**: Erros de validação são registrados em last_state.json.
+> **Regras de Negócio:**
+>
+> * Para a validação ocorrer, tanto o arquivo de dados quanto o arquivo de esquema **devem existir** e ser **JSONs válidos**.
+> * O arquivo de dados a ser validado **deve ser um objeto JSON** `{...}` no nível raiz. A validação não é suportada para arrays ou outros tipos de dados.
+> * O arquivo de esquema **deve seguir um formato simplificado e customizado** para este projeto, contendo duas chaves principais:
+>     1.  `"required"`: Uma lista de chaves (strings) que são obrigatórias no arquivo de dados.
+>     2.  `"properties"`: Um objeto que mapeia nomes de chaves aos seus tipos de dados esperados (ex: `"String"`, `"Number"`, `"Bool"`, `"Object"`, `"Array"`).
+> * A validação verifica duas condições:
+>     1.  **Presença:** Se todos os campos listados em `"required"` existem no arquivo de dados.
+>     2.  **Tipo:** Se os campos presentes no arquivo de dados correspondem aos tipos definidos em `"properties"`.
+> * Se todas as regras forem satisfeitas, uma mensagem de sucesso é exibida. Caso contrário, **todos os erros encontrados** são listados.
 
-- **Exemplo de Validação**:
+### 3. Interação com Arquivos (Regra Geral)
 
-  ```haskell
-    -- Esquema exige "id" (number) e "nome" (string)
-    validateJson schema.json data.json
-    -- Falha se: 
-    -- 1. "id" não existir ou for string
-    -- 2. "nome" estiver ausente
-### 3. Persistência de Estado
-- **Regras**:
+Esta regra descreve como o sistema interage com o sistema de arquivos.
 
-    - **RN10**: Ao iniciar, o sistema carrega:
+> **Regras de Negócio:**
+>
+> * O sistema é **stateless** (não guarda estado). A cada execução, as informações necessárias são lidas diretamente dos arquivos de entrada especificados nos argumentos.
+> * As operações **nunca alteram os arquivos de entrada**.
+> * Quando uma operação resulta na escrita de um arquivo (como na filtragem com um caminho de saída), o sistema cria um novo arquivo ou **sobrescreve completamente** um arquivo existente com o mesmo nome. Não há atualização parcial de arquivos.
 
-        - Últimos arquivos processados
+---
 
-        - Estatísticas de operações
+## Como Compilar e Executar
 
-        - Erros recentes
+**1. Compilar o Projeto**
 
-    - **RN11**: Toda operação bem-sucedida atualiza:
+No diretório raiz do projeto, execute o comando abaixo. O Stack irá baixar as dependências e compilar o código.
 
-        - Timestamp da última operação
-
-        - Contador de operações
-
-        - Dados de saída
-
-- **Estrutura de last_state.json**:
-    ```json
-    {
-    "last_operation": "filter",
-    "timestamp": "2024-06-10T12:00:00Z",
-    "success_count": 5,
-    "last_output": {"filter": "status=ativo", "matches": 3}
-    }
-## Como Usar
 ```bash
-# Filtragem (atualiza estado)
-stack exec json-processor -- filter --filter "status=ativo" input.json
+stack build
+```
+**2. Executar a Ferramenta**
 
-# Validação (verifica esquema)
-stack exec json-processor -- validate --schema schema.json data.json
+Use ``stack exec json-processor --`` seguido dos comandos e argumentos desejados. Para ver todas as opções disponíveis e suas descrições, use o comando --help:
+
+```bash
+stack exec json-processor -- --help
+```
+
+# Exemplos de Uso
+
+A seguir estão exemplos práticos para as duas principais funcionalidades da ferramenta.
+
+**Filtragem**
+
+- Filtrar usuários com status "ativo" e exibir no console:
+
+```
+stack exec json-processor -- filtrar --filter "status=ativo" entrada.json
+```
+
+- Filtrar por um campo aninhado (``dados.cidade``) e salvar em um arquivo de saída:
+
+```
+stack exec json-processor -- filtrar --filter "dados.cidade=Olinda" entrada.json saida.json
+```
+
+**Validação**
+
+- Validar um arquivo de dados que está em conformidade com o esquema:
+
+```
+stack exec json-processor -- validar esquema.json dado_para_validar.json
+```
+
+Saída Esperada:
+```
+Validação bem-sucedida: O arquivo JSON está em conformidade com o esquema
+```
+
+- Validar um arquivo de dados que viola as regras do esquema:
+
+```
+stack exec json-processor -- validar esquema.json dado_invalido.json
+```
+
+Saída Esperada:
+
+```
+Erros de validação encontrados:
+- Campo obrigatório ausente: usuario
+- Tipo incorreto para o campo 'id'. Esperado: Number, encontrado: String
+- Tipo incorreto para o campo 'status'. Esperado: String, encontrado: Bool
+```

@@ -1,0 +1,13 @@
+{
+    "required": [
+        "id",
+        "usuario",
+        "status"
+    ],
+    "properties": {
+        "id": "Number",
+        "usuario": "String",
+        "status": "String",
+        "dados": "Object"
+    }
+}

@@ -1,35 +1,24 @@
-name: json-processor
-version: "1.0.0"
+name:                json-processor
+version:             0.1.0.0
+
 dependencies:
 - base >= 4.7 && < 5
-- aeson
-- bytestring
-- text
-- optparse-applicative
-- unordered-containers
+- aeson              # Para manipulação de JSON
+- bytestring         # Para I/O de arquivos eficiente
+- text               # Para manipulação de texto (usado por Aeson)
+- optparse-applicative # Para parsing de argumentos de linha de comando
 - vector
-- time
-- split
-- directory
 
 library:
   source-dirs: src
-  exposed-modules:
-    - CLI
-    - Filter
-    - Validation
-    - Persistence
-  ghc-options:
-    - -XOverloadedStrings
 
 executables:
   json-processor:
-    main: Main.hs
-    source-dirs: app
-    ghc-options: 
-      - -threaded 
-      - -rtsopts 
-      - -with-rtsopts=-N
-      - -XOverloadedStrings
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
     dependencies:
-      - json-processor
+    - json-processor

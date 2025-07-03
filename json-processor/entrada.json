@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "usuario": "ana",
+        "status": "ativo",
+        "dados": {
+            "cidade": "Recife"
+        }
+    },
+    {
+        "id": 2,
+        "usuario": "bruno",
+        "status": "inativo",
+        "dados": {
+            "cidade": "Olinda"
+        }
+    },
+    {
+        "id": 3,
+        "usuario": "carla",
+        "status": "ativo",
+        "dados": {
+            "cidade": "Goiana"
+        }
+    }
+]

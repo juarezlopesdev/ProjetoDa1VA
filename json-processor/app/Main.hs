@@ -1,56 +1,55 @@
-module Main where
+-- app/Main.hs
+{-# LANGUAGE OverloadedStrings #-}
 
-import CLI (Command(..), parseCommand)
-import Filter (filterJson)
-import Validation (validateJson)
-import Persistence (loadState, updateState)
-import Options.Applicative (execParser, info, helper, fullDesc, progDesc, (<**>))
-import qualified Data.ByteString.Lazy as BL
-import Data.Aeson (Value, decode)
-import System.Exit (exitFailure, exitSuccess)
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Data.Text (Text)
-import qualified Data.ByteString as B
+import Options.Applicative
+import qualified JsonProc.Filter as F
+import qualified JsonProc.Validation as V
 
--- Função para remover BOM e converter para UTF-8
-ensureUtf8 :: BL.ByteString -> BL.ByteString
-ensureUtf8 bs
-  | B.take 3 (BL.toStrict bs) == B.pack [0xEF, 0xBB, 0xBF] =  -- UTF-8 BOM
-      BL.fromStrict $ B.drop 3 (BL.toStrict bs)
-  | B.take 2 (BL.toStrict bs) == B.pack [0xFF, 0xFE] ||      -- UTF-16 LE BOM
-    B.take 2 (BL.toStrict bs) == B.pack [0xFE, 0xFF] =       -- UTF-16 BE BOM
-      BL.fromStrict $ encodeUtf8 (decodeUtf8 (BL.toStrict bs))
-  | otherwise = bs
+-- Define a estrutura de dados para os nossos comandos
+data Command
+  = Filter F.FilterOptions
+  | Validate V.ValidationOptions
 
+-- Parser para as opções de filtragem
+filterOptions :: Parser F.FilterOptions
+filterOptions = F.FilterOptions
+  <$> strOption
+      ( long "filter"
+     <> metavar "CRITÉRIO"
+     <> help "Critério de filtragem no formato 'caminho.chave=valor'" )
+  <*> strArgument
+      ( metavar "ENTRADA"
+     <> help "Arquivo JSON de entrada" )
+  <*> optional (strArgument
+      ( metavar "SAIDA"
+     <> help "Arquivo de saída (opcional, padrão: stdout)" ))
+
+-- Parser para as opções de validação
+validationOptions :: Parser V.ValidationOptions
+validationOptions = V.ValidationOptions
+  <$> strArgument
+      ( metavar "ESQUEMA"
+     <> help "Arquivo de esquema JSON" )
+  <*> strArgument
+      ( metavar "ENTRADA"
+     <> help "Arquivo de dados JSON para validar" )
+
+-- Parser principal que combina os subcomandos
+commands :: Parser Command
+commands = subparser
+  ( command "filtrar" (info (Filter <$> filterOptions) (progDesc "Filtra um arquivo JSON com base em um critério."))
+ <> command "validar" (info (Validate <$> validationOptions) (progDesc "Valida um arquivo JSON contra um esquema."))
+  )
+
+-- Função principal que executa o parser e age de acordo com o comando
 main :: IO ()
 main = do
-  currentState <- loadState
-  cmd <- execParser $ info (parseCommand <**> helper) $
-    fullDesc <> progDesc "Ferramenta de Processamento JSON com Estado Persistente"
-    
+  cmd <- execParser opts
   case cmd of
-    Filter expr input output -> do
-      inputData <- ensureUtf8 <$> BL.readFile input
-      case filterJson expr inputData of
-        Left err -> do
-          putStrLn $ "Erro na filtragem: " ++ err
-          exitFailure
-        Right result -> do
-          _ <- updateState "filter" (decode result) currentState
-          case output of
-            Just outFile -> BL.writeFile outFile result
-            Nothing -> BL.putStr result
-          putStrLn "Filtragem concluída com sucesso!"
-          exitSuccess
-          
-    ValidateSchema schema input -> do
-      schemaData <- ensureUtf8 <$> BL.readFile schema
-      inputData  <- ensureUtf8 <$> BL.readFile input
-      case validateJson schemaData inputData of
-        Left err -> do
-          putStrLn $ "Erro na validação: " ++ err
-          exitFailure
-        Right () -> do
-          _ <- updateState "validate" Nothing currentState
-          putStrLn "Validação bem-sucedida!"
-          exitSuccess
+    Filter opts     -> F.runFilter opts
+    Validate opts   -> V.runValidation opts
+  where
+    opts = info (commands <**> helper)
+      ( fullDesc
+     <> progDesc "Ferramenta de Processamento JSON em Haskell"
+     <> header "json-processor - uma ferramenta para manipular e validar JSON" )
